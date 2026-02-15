@@ -1,0 +1,178 @@
+// RMS Backend — Prisma schema
+// Docs: sample-apps-docs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ AUTH ============
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("WAITER") // ADMIN | MANAGER | WAITER | KITCHEN
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notificationsReceived Notification[]
+}
+
+// ============ BRANCH (multi-location) ============
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  timezone  String?  @default("UTC")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  categories Category[]
+  items     Item[]
+  tables    Table[]
+  orders    Order[]
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  wasteLogs      WasteLog[]
+}
+
+// ============ MENU ============
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  sortOrder Int      @default(0)
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  items     Item[]
+  createdAt DateTime @default(now())
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  branchId    String
+  branch      Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+  inventoryItem InventoryItem?
+}
+
+// ============ TABLES ============
+model Table {
+  id        String     @id @default(cuid())
+  number    String
+  capacity  Int
+  zone      String?
+  status    String   @default("EMPTY") // EMPTY | OCCUPIED | RESERVED
+  branchId  String
+  branch    Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  orders Order[]
+}
+
+// ============ ORDERS ============
+model Order {
+  id        String      @id @default(cuid())
+  tableId   String
+  table     Table       @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  branchId  String
+  branch    Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  status    String   @default("PENDING") // PENDING | SENT | PREPARING | READY | SERVED
+  notes     String?
+  createdBy String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id       String   @id @default(cuid())
+  orderId  String
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId   String
+  item     Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  quantity Int
+  notes    String?
+  price    Float
+  createdAt DateTime @default(now())
+}
+
+// ============ INVENTORY ============
+model InventoryItem {
+  id           String    @id @default(cuid())
+  branchId     String
+  branch       Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  itemId       String?   @unique
+  item         Item?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
+  name         String
+  unit         String    @default("unit")
+  quantity     Float     @default(0)
+  minQuantity  Float     @default(0)
+  expiryDate   DateTime?
+  purchaseDate DateTime?
+  purchaseCost Float?
+  updatedAt    DateTime  @updatedAt
+
+  movements StockMovement[]
+  wasteLogs WasteLog[]
+}
+
+model StockMovement {
+  id               String   @id @default(cuid())
+  inventoryItemId  String
+  inventoryItem    InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  branchId         String
+  branch           Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  type             String   // IN | OUT | ADJUST
+  quantity         Float
+  reason           String?
+  costPerUnit      Float?
+  createdAt        DateTime @default(now())
+}
+
+model WasteLog {
+  id               String   @id @default(cuid())
+  branchId         String
+  branch           Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  inventoryItemId  String?
+  inventoryItem    InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  itemName         String
+  quantity         Float
+  reason           String?  // EXPIRED | DAMAGED | SPILL | OTHER
+  cost             Float?
+  createdAt        DateTime @default(now())
+}
+
+// ============ NOTIFICATIONS ============
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  branchId  String?
+  type      String
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

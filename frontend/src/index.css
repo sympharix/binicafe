@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rms-bg: #0f1419;
+  --rms-panel: #161d26;
+  --rms-amber: #f59e0b;
+  --rms-emerald: #10b981;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  @apply bg-rms-dark text-gray-100 antialiased;
+  background-image: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(245, 158, 11, 0.06), transparent);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-rms-panel;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-rms-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-rms-muted;
+}
+
+/* Focus ring */
+:focus-visible {
+  @apply outline-none ring-2 ring-rms-amber ring-offset-2 ring-offset-rms-dark;
+}
+
+/* App content area */
+.app-content {
+  @apply min-h-screen flex flex-col;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

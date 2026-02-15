@@ -1,0 +1,61 @@
+# BiniHost Fleet — RMS App
+# Use published images only (no build context). Build and push images first.
+# Replace ghcr.io/YOUR_ORG with your registry (e.g. ghcr.io/myorg or docker.io/username).
+
+services:
+  # Web API — public URL: {app-slug}-api.binihost.app
+  api:
+    image: ghcr.io/YOUR_ORG/rms-backend:latest
+    deploy:
+      resources:
+        limits:
+          memory: 256Mi
+        reservations:
+          memory: 128Mi
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      DATABASE_URL: postgresql://rms:${POSTGRES_PASSWORD}@db:5432/rms?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # PostgreSQL — internal only (no public ports in Fleet)
+  db:
+    image: postgres:16-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 512Mi
+        reservations:
+          memory: 256Mi
+    # No ports: exposed — internal only; api connects via hostname "db"
+    environment:
+      POSTGRES_USER: rms
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: rms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rms -d rms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
