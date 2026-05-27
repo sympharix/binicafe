@@ -1,0 +1,51 @@
+# Dependencies — never commit
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Prisma generated
+**/.prisma/
+**/generated/prisma/
+
+# Environment files — secrets
+.env
+.env.local
+.env.*.local
+.env.fleet
+.env.production
+# Keep examples
+!.env.example
+!.env.*.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Build archives
+*.tar
+*.tar.gz
+*.tar.xz
+*.tgz
+*.zip
+
+# Test artefacts
+coverage/
+.nyc_output/
